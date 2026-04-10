@@ -154,3 +154,78 @@ with st.expander("إدارة سجل العمليات (حذف وإصلاح)"):
 
 with st.expander("📝 ملاحظة المبرمج"):
     st.info("يا أيوب، مشكلة ظهور التاريخ 0 كانت بسبب بيانات قديمة. الكود أعلاه سيسمح لك بحذف تلك العمليات 'الخربة' لكي تعود الحسابات صحيحة وتظهر في لوحة التحكم.")
+# --- كود إدارة المخازن الكبيرة (أضفه في نهاية الملف تماماً) ---
+st.write("---")
+st.header("📦 إدارة المخازن والمنتجات (نظام البحث السريع)")
+
+# وظيفة تحميل المخزن
+def load_stock_pro():
+    if not os.path.exists("data_stock.csv"):
+        pd.DataFrame(columns=["المنتج", "الكمية", "السعر"]).to_csv("data_stock.csv", index=False, encoding='utf-8-sig')
+    return pd.read_csv("data_stock.csv")
+
+df_stock = load_stock_pro()
+
+# تبويبات لتنظيم العمل
+tab_sale, tab_add, tab_view = st.tabs(["🛒 بيع سريع (بحث)", "➕ إضافة بضاعة جديدة", "📊 جرد المخزن الكلي"])
+
+with tab_add:
+    st.subheader("تسجيل بضاعة جديدة في النظام")
+    with st.form("add_stock_pro_form", clear_on_submit=True):
+        p_name = st.text_input("اسم المنتج (مثلاً: شامبو عبوة كبيرة)")
+        p_qty = st.number_input("الكمية المتوفرة حالياً", min_value=0, step=1)
+        p_price = st.number_input("سعر البيع المفرد (دينار)", min_value=0, step=250)
+        if st.form_submit_button("إضافة للمخزن ✅"):
+            if p_name:
+                new_p = pd.DataFrame([[p_name, p_qty, p_price]], columns=["المنتج", "الكمية", "السعر"])
+                df_stock = pd.concat([df_stock, new_p], ignore_index=True)
+                df_stock.to_csv("data_stock.csv", index=False, encoding='utf-8-sig')
+                st.success(f"تم تسجيل {p_name} بنجاح!")
+                st.rerun()
+
+with tab_sale:
+    st.subheader("عملية بيع سريعة")
+    if not df_stock.empty:
+        # ميزة البحث الذكي - تكتب اسم المنتج ويظهر لك فوراً
+        search_query = st.selectbox("ابحث عن المنتج بالاسم:", df_stock["المنتج"], index=None, placeholder="اكتب اسم المنتج هنا...")
+        
+        if search_query:
+            # جلب معلومات المنتج المختار
+            product_data = df_stock[df_stock["المنتج"] == search_query].iloc[0]
+            st.info(f"الكمية المتوفرة: {product_data['الكمية']} | السعر: {int(product_data['السعر']):,} د.ع")
+            
+            with st.form("confirm_sale"):
+                qty_to_sell = st.number_input("الكمية المباعة", min_value=1, max_value=int(product_data['الكمية']), value=1)
+                if st.form_submit_button("إتمام عملية البيع 💰"):
+                    # 1. تحديث كمية المخزن
+                    df_stock.loc[df_stock["المنتج"] == search_query, "الكمية"] -= qty_to_sell
+                    df_stock.to_csv("data_stock.csv", index=False, encoding='utf-8-sig')
+                    
+                    # 2. تسجيل الوارد المالي تلقائياً
+                    total_p = product_data['السعر'] * qty_to_sell
+                    now_date = datetime.datetime.now().strftime("%Y-%m-%d")
+                    new_f = pd.DataFrame([[now_date, f"بيع: {search_query} (عدد {qty_to_sell})", "وارد", total_p]], columns=FIN_COLS)
+                    
+                    # قراءة الحسابات الحالية وإضافة البيعة لها
+                    df_fin_current = pd.read_csv("data_finance.csv")
+                    pd.concat([df_fin_current, new_f], ignore_index=True).to_csv("data_finance.csv", index=False, encoding='utf-8-sig')
+                    
+                    st.success(f"تم البيع بنجاح! السعر الإجمالي: {total_p:,} د.ع")
+                    st.rerun()
+    else:
+        st.warning("المخزن فارغ تماماً، ابدأ بإضافة بضاعة.")
+
+with tab_view:
+    st.subheader("جرد المنتجات وحالة المخازن")
+    if not df_stock.empty:
+        # تمييز المنتجات التي أوشكت على النفاد
+        def highlight_low_stock(s):
+            return ['background-color: #ff4b4b' if s.الكمية < 5 else '' for _ in s]
+        
+        st.write("المنتجات الملونة بالأحمر أوشكت على النفاذ (أقل من 5 قطع):")
+        st.dataframe(df_stock.style.apply(highlight_low_stock, axis=1), use_container_width=True)
+        
+        if st.button("🗑️ حذف منتج من القائمة"):
+            st.warning("لحذف منتج، يرجى القيام بذلك يدوياً من ملف CSV حالياً لضمان سلامة البيانات.")
+    else:
+        st.info("لا توجد بضاعة لعرضها.")
