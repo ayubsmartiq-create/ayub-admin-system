@@ -3,67 +3,98 @@ import pandas as pd
 import datetime
 import os
 
-# إعداد واجهة النظام
+# --- 1. إعدادات الصفحة وتحسين الموبايل ---
 st.set_page_config(page_title="نظام أيوب الإداري", layout="wide")
 
+# تصميم CSS متطور يدعم الموبايل والحاسبة
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+    
     html, body, [class*="css"]  {
         font-family: 'Cairo', sans-serif;
         text-align: right;
         direction: rtl;
     }
+    
+    /* تحسين شكل البطاقات المالية للموبايل */
+    [data-testid="stMetric"] {
+        background-color: #1e1e1e;
+        border: 1px solid #FFD700;
+        border-radius: 10px;
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+
     .stApp { background-color: #121212; }
     h1, h2, h3, p, span, label { color: #FFD700 !important; }
+
+    /* ضبط الجداول لتكون قابلة للتمرير في الموبايل */
+    .stTable {
+        overflow-x: auto;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🛡️ نظام أيوب للحلول الإدارية والمالية")
-st.write("نظام احترافي لإدارة الحسابات والموظفين")
+# --- 2. عنوان النظام ---
+st.title("🛡️ نظام أيوب الذكي")
+st.write("إدارة مالية وإدارية متكاملة")
 
-# إدارة قاعدة البيانات
+# --- 3. قاعدة البيانات ---
 اسم_الملف = "data_finance.csv"
 if not os.path.exists(اسم_الملف):
     df = pd.DataFrame(columns=["التاريخ", "التفاصيل", "النوع", "المبلغ"])
     df.to_csv(اسم_الملف, index=False, encoding='utf-8-sig')
 
-# القائمة الجانبية
-st.sidebar.title("القائمة الرئيسية")
-الخيار = st.sidebar.radio("اختر القسم:", ["لوحة التحكم", "إضافة عملية مالية", "إدارة الموظفين"])
+# --- 4. القائمة الجانبية (Sidebar) ---
+with st.sidebar:
+    st.header("القائمة")
+    الخيار = st.radio("انتقل إلى:", ["لوحة التحكم", "إضافة عملية", "سجل الموظفين"])
+    st.write("---")
+    st.write("مبرمج النظام: أيوب هاني")
 
+# --- 5. الأقسام ---
 if الخيار == "لوحة التحكم":
     st.header("📊 ملخص الحالة المالية")
     بيانات = pd.read_csv(اسم_الملف)
+    
     الوارد = بيانات[بيانات['النوع'] == 'وارد']['المبلغ'].sum()
     المصروف = بيانات[بيانات['النوع'] == 'مصروف']['المبلغ'].sum()
     الصافي = الوارد - المصروف
     
-    ع1, ع2, ع3 = st.columns(3)
-    ع1.metric("إجمالي الوارد", f"{الوارد:,} دينار")
-    ع2.metric("إجمالي المصاريف", f"{المصروف:,} دينار")
-    ع3.metric("صافي الربح", f"{الصافي:,} دينار")
-    st.table(بيانات.tail(10))
+    # استخدام أعمدة تترتب تلقائياً حسب حجم الشاشة
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col1: st.metric("إجمالي الوارد", f"{الوارد:,}")
+    with col2: st.metric("إجمالي المصاريف", f"{المصروف:,}")
+    with col3: st.metric("صافي الربح", f"{الصافي:,}")
+    
+    st.write("---")
+    st.subheader("📝 آخر العمليات")
+    # عرض الجدول بشكل يتناسب مع الموبايل
+    st.dataframe(بيانات.tail(10), use_container_width=True)
 
-elif الخيار == "إضافة عملية مالية":
-    st.header("➕ تسجيل وارد أو مصروف جديد")
-    with st.form("form_finance"):
+elif الخيار == "إضافة عملية":
+    st.header("➕ تسجيل جديد")
+    with st.form("finance_form"):
         التفاصيل = st.text_input("وصف العملية")
-        المبلغ = st.number_input("المبلغ", min_value=0)
-        النوع = st.selectbox("نوع العملية", ["وارد", "مصروف"])
-        إرسال = st.form_submit_button("حفظ")
-        if إرسال:
+        المبلغ = st.number_input("المبلغ (دينار)", min_value=0, step=250)
+        النوع = st.selectbox("النوع", ["وارد", "مصروف"])
+        إرسال = st.form_submit_button("حفظ العملية")
+        
+        if إرسال and التفاصيل:
             بيانات = pd.read_csv(اسم_الملف)
-            جديد = {"التاريخ": datetime.datetime.now().strftime("%Y-%m-%d"), "التفاصيل": التفاصيل, "النوع": النوع, "المبلغ": المبلغ}
+            جديد = {"التاريخ": datetime.datetime.now().strftime("%Y-%m-%d"), 
+                    "التفاصيل": التفاصيل, "النوع": النوع, "المبلغ": المبلغ}
             بيانات = pd.concat([بيانات, pd.DataFrame([جديد])], ignore_index=True)
             بيانات.to_csv(اسم_الملف, index=False, encoding='utf-8-sig')
-            st.success("تم الحفظ!")
+            st.success("تم التحديث!")
+            st.rerun()
 
-elif الخيار == "إدارة الموظفين":
-    st.header("👥 سجل الموظفين")
+elif الخيار == "سجل الموظفين":
+    st.header("👥 إدارة الكادر")
     موظفين = pd.DataFrame({
-        "الاسم": ["أيوب هاني", "موظف 1", "موظف 2"],
-        "الراتب": ["1,500,000", "800,000", "700,000"],
-        "الحالة": ["مدير", "محاسب", "مندوب"]
+        "الاسم": ["أيوب هاني", "علي جاسم", "محمد حسن"],
+        "المنصب": ["مدير النظام", "محاسب", "مندوب"],
+        "الراتب": ["1,500,000", "900,000", "700,000"]
     })
     st.table(موظفين)
