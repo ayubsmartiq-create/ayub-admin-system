@@ -128,3 +128,29 @@ elif menu == "👥 إدارة الموظفين":
                 df_emp = pd.concat([df_emp, new_e], ignore_index=True)
                 df_emp.to_csv("data_employees.csv", index=False, encoding='utf-8-sig')
                 st.rerun()
+# --- كود التصحيح الملحق (أضفه في النهاية) ---
+st.write("---")
+st.subheader("🛠️ أدوات التحكم المتقدمة")
+
+with st.expander("إدارة سجل العمليات (حذف وإصلاح)"):
+    # إصلاح مشكلة التاريخ والربح برمجياً في الذاكرة
+    df_fin['المبلغ'] = pd.to_numeric(df_fin['المبلغ'], errors='coerce').fillna(0)
+    
+    if not df_fin.empty:
+        st.write("اختر العملية التي تريد حذفها:")
+        for index, row in df_fin.iterrows():
+            col_rec, col_del = st.columns([4, 1])
+            # عرض التاريخ بشكل صحيح حتى لو كان مسجلاً خطأ
+            display_date = row['التاريخ'] if row['التاريخ'] != "0" else datetime.date.today()
+            col_rec.write(f"📌 {display_date} | {row['التفاصيل']} | {int(row['المبلغ']):,}")
+            
+            if col_del.button("❌ حذف", key=f"fix_del_{index}"):
+                df_fin = df_fin.drop(index)
+                df_fin.to_csv("data_finance.csv", index=False, encoding='utf-8-sig')
+                st.success("تم الحذف بنجاح!")
+                st.rerun()
+    else:
+        st.info("السجل فارغ حالياً.")
+
+with st.expander("📝 ملاحظة المبرمج"):
+    st.info("يا أيوب، مشكلة ظهور التاريخ 0 كانت بسبب بيانات قديمة. الكود أعلاه سيسمح لك بحذف تلك العمليات 'الخربة' لكي تعود الحسابات صحيحة وتظهر في لوحة التحكم.")
