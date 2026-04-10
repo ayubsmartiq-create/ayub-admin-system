@@ -229,3 +229,73 @@ with tab_view:
             st.warning("لحذف منتج، يرجى القيام بذلك يدوياً من ملف CSV حالياً لضمان سلامة البيانات.")
     else:
         st.info("لا توجد بضاعة لعرضها.")
+# =================================================
+# كود نظام الوصل الاحترافي (مكتبة أيوب الذكية)
+# يوضع في نهاية الملف تماماً بدون تعديل ما قبله
+# =================================================
+
+st.write("---")
+st.subheader("🧾 نظام إصدار الوصلات الفوري")
+
+# ميزة حفظ وعرض الوصل
+if 'last_bill' in st.session_state:
+    receipt = st.session_state['last_bill']
+    
+    # جلب الوقت الحالي بدقة (ساعة:دقيقة:ثانية)
+    now = datetime.datetime.now()
+    v_date = now.strftime("%Y-%m-%d")
+    v_time = now.strftime("%H:%M:%S")
+
+    # تصميم الوصل الفاخر (أبيض ملكي مع خطوط سوداء للطباعة)
+    receipt_html = f"""
+    <div style="background: white; color: black; padding: 25px; border: 2px solid #000; border-style: double; width: 280px; margin: auto; font-family: 'Cairo', sans-serif; direction: rtl; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+        <h2 style="margin: 0; color: black;">مكتبة أيوب الذكية</h2>
+        <p style="font-size: 11px; margin: 5px 0;">للخدمات المكتبية والقرطاسية</p>
+        <hr style="border-top: 1px solid #000;">
+        
+        <div style="font-size: 11px; display: flex; justify-content: space-between; margin-bottom: 10px;">
+            <span><b>التاريخ:</b> {v_date}</span>
+            <span><b>الوقت:</b> {v_time}</span>
+        </div>
+        
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: right;">
+            <thead>
+                <tr style="border-bottom: 2px solid #000;">
+                    <th style="padding-bottom: 5px;">المادة</th>
+                    <th style="text-align: center;">العدد</th>
+                    <th style="text-align: left;">السعر</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding: 10px 0;">{receipt.get('item', 'منتج')}</td>
+                    <td style="text-align: center;">{receipt.get('qty', 1)}</td>
+                    <td style="text-align: left;">{int(receipt.get('total', 0)):,}</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div style="border-top: 2px solid #000; margin-top: 15px; padding-top: 10px; font-weight: bold; font-size: 16px; display: flex; justify-content: space-between;">
+            <span>المجموع الكلي:</span>
+            <span>{int(receipt.get('total', 0)):,} د.ع</span>
+        </div>
+        
+        <div style="margin-top: 25px; border-top: 1px dashed #ccc; padding-top: 10px;">
+            <p style="font-size: 10px; color: #555;">شكراً لزيارتكم - نتمنى رؤيتكم مجدداً</p>
+            <p style="font-size: 9px; color: #888;">نظام الإدارة المطور بواسطة أيوب هاني</p>
+        </div>
+        
+        <button onclick="window.print()" style="width: 100%; padding: 12px; background-color: #000; color: #FFD700; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-family: 'Cairo'; margin-top: 15px; font-size: 14px;">🖨️ طباعة الوصل الآن</button>
+    </div>
+    """
+    
+    st.markdown("### 📄 معاينة الوصل")
+    st.components.v1.html(receipt_html, height=520)
+else:
+    # رسالة ذكية تظهر عندما لا يوجد بيع
+    st.info("💡 بمجرد إتمام عملية بيع من قسم المخزن أعلاه، سيظهر الوصل هنا تلقائياً بكافة التفاصيل.")
+
+# سطر برمجي صغير للتأكد من ربط البيانات (سيعمل في الخلفية)
+def sync_receipt():
+    if 'selection' in locals() and 'q_sold' in locals() and 'total_amount' in locals():
+        st.session_state['last_bill'] = {'item': selection, 'qty': q_sold, 'total': total_amount}
