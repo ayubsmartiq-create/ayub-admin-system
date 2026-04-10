@@ -229,4 +229,70 @@ with tab_view:
             st.warning("لحذف منتج، يرجى القيام بذلك يدوياً من ملف CSV حالياً لضمان سلامة البيانات.")
     else:
         st.info("لا توجد بضاعة لعرضها.")
-# 
+# =================================================
+# كود نظام طباعة الوصل الاحترافي - مكتبة أيوب الذكية
+# =================================================
+
+st.write("---")
+st.subheader("🧾 لوحة إصدار الوصلات")
+
+# التأكد من وجود ميزة حفظ الوصل في ذاكرة النظام
+if 'last_bill' in st.session_state:
+    b = st.session_state['last_bill']
+    
+    # الحصول على الوقت الحالي بدقة (ساعة:دقيقة:ثانية)
+    current_time = datetime.datetime.now().strftime("%H:%M:%S")
+    current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+
+    # تصميم الوصل الاحترافي (واجهة بيضاء مع خطوط واضحة)
+    receipt_style = f"""
+    <div style="background-color: white; color: black; padding: 25px; border: 2px solid #333; border-style: double; width: 300px; margin: auto; font-family: 'Cairo', sans-serif; direction: rtl; box-shadow: 2px 2px 10px rgba(0,0,0,0.1);">
+        <h2 style="margin: 0; color: #1a1a1a; text-align: center;">مكتبة أيوب الذكية</h2>
+        <p style="font-size: 12px; text-align: center; margin: 5px 0; color: #666;">إدارة الأنظمة والخدمات المكتبية</p>
+        <div style="border-top: 1px solid #eee; margin: 10px 0;"></div>
+        
+        <div style="font-size: 11px; display: flex; justify-content: space-between; margin-bottom: 10px;">
+            <span><b>التاريخ:</b> {b.get('date', current_date)}</span>
+            <span><b>الوقت:</b> {current_time}</span>
+        </div>
+        
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 15px;">
+            <thead>
+                <tr style="border-bottom: 2px solid #333; text-align: right;">
+                    <th style="padding-bottom: 5px;">المادة</th>
+                    <th style="text-align: center;">العدد</th>
+                    <th style="text-align: left;">السعر</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding: 10px 0;">{b.get('item', 'منتج غير مسمى')}</td>
+                    <td style="text-align: center;">{b.get('qty', 1)}</td>
+                    <td style="text-align: left;">{int(b.get('total', 0)):,}</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div style="border-top: 2px solid #333; margin-top: 15px; padding-top: 10px;">
+            <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 16px;">
+                <span>المجموع الكلي:</span>
+                <span>{int(b.get('total', 0)):,} د.ع</span>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px; text-align: center; font-size: 10px; color: #888;">
+            <p>شكراً لتعاملكم مع مكتبتنا الذكية</p>
+            <p>تم إصدار الوصل بواسطة نظام أيوب الإداري</p>
+        </div>
+        
+        <button onclick="window.print()" style="width: 100%; padding: 12px; background-color: #000; color: #FFD700; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-family: 'Cairo'; margin-top: 15px; font-size: 14px;">🖨️ طباعة الوصل الآن</button>
+    </div>
+    """
+    
+    st.markdown("### 📄 معاينة الوصل الجاهز للطباعة")
+    st.components.v1.html(receipt_style, height=520)
+    
+    # نصيحة للمستخدم
+    st.caption("ملاحظة: اضغط على الزر الذهبي لفتح نافذة الطباعة المباشرة.")
+else:
+    st.info("💡 بمجرد إتمام عملية بيع من قسم المخزن، سيظهر هنا وصل 'مكتبة أيوب الذكية' بشكل تلقائي ومفصل.")
