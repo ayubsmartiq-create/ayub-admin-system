@@ -210,6 +210,8 @@ with tab_sale:
                     df_fin_current = pd.read_csv("data_finance.csv")
                     pd.concat([df_fin_current, new_f], ignore_index=True).to_csv("data_finance.csv", index=False, encoding='utf-8-sig')
                     
+                    st.session_state['last_bill'] = {'item': search_query, 'qty': qty_to_sell, 'total': total_p}
+                    
                     st.success(f"تم البيع بنجاح! السعر الإجمالي: {total_p:,} د.ع")
                     st.rerun()
     else:
