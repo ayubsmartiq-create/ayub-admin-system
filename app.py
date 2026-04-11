@@ -231,74 +231,32 @@ with tab_view:
             st.warning("لحذف منتج، يرجى القيام بذلك يدوياً من ملف CSV حالياً لضمان سلامة البيانات.")
     else:
         st.info("لا توجد بضاعة لعرضها.")
-# =================================================
-# كود الوصل بنظام "المزامنة التلقائية" - مكتبة أيوب الذكية
-# =================================================
-
+# # --- كود عرض الوصل النهائي لـ مكتبة أيوب ---
 st.write("---")
-st.subheader("🧾 نظام إصدار الوصلات الفوري")
-
-# وظيفة لحفظ آخر عملية بيع في ملف مؤقت لكي يراها الكود في الأسفل
-def sync_last_sale():
-    # هذا الجزء يحاول صيد المتغيرات من الكود الذي كتبته أنت في الأعلى
-    # سنبحث عن (المبلغ، اسم المنتج، الكمية)
-    try:
-        # نحن نفترض أن متغيراتك اسمها (selection, q_sold, total_amount) أو (choice, qty, total)
-        current_item = locals().get('selection') or locals().get('choice') or "منتج"
-        current_qty = locals().get('q_sold') or locals().get('qty') or 1
-        current_total = locals().get('total_amount') or locals().get('total') or 0
-        
-        if current_total > 0:
-            with open("temp_receipt.txt", "w", encoding="utf-8") as f:
-                f.write(f"{current_item}|{current_qty}|{current_total}")
-    except:
-        pass
-
-sync_last_sale()
-
-# قراءة البيانات وعرض الوصل
-if os.path.exists("temp_receipt.txt"):
-    with open("temp_receipt.txt", "r", encoding="utf-8") as f:
-        data = f.read().split("|")
-        
-    p_name = data[0]
-    p_qty = data[1]
-    p_total = data[2]
+if 'last_bill' in st.session_state:
+    b = st.session_state['last_bill']
+    now = datetime.datetime.now()
     
-    now_full = datetime.datetime.now()
-    v_date = now_full.strftime("%Y-%m-%d")
-    v_time = now_full.strftime("%H:%M:%S")
-
-    receipt_html = f"""
-    <div style="background: white; color: black; padding: 25px; border: 2px solid #000; border-style: double; width: 280px; margin: auto; font-family: 'Cairo', sans-serif; direction: rtl; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-        <h2 style="margin: 0;">مكتبة أيوب الذكية</h2>
-        <p style="font-size: 11px; margin: 5px 0;">وصل مبيعات الكتروني</p>
+    html_code = f"""
+    <div style="background: white; color: black; padding: 15px; border: 2px solid black; width: 260px; margin: auto; font-family: 'Cairo'; direction: rtl; text-align: center;">
+        <h3 style="margin:0;">مكتبة أيوب الذكية</h3>
+        <p style="font-size: 10px;">وصل مبيعات فوري</p>
         <hr>
-        <div style="font-size: 11px; display: flex; justify-content: space-between;">
-            <span><b>التاريخ:</b> {v_date}</span>
-            <span><b>الوقت:</b> {v_time}</span>
-        </div>
-        <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 15px; text-align: right;">
-            <tr style="border-bottom: 2px solid #000;">
-                <th>المادة</th> <th>العدد</th> <th>السعر</th>
+        <p style="font-size: 11px; text-align: right;"><b>التاريخ:</b> {now.strftime('%Y-%m-%d %H:%M')}</p>
+        <table style="width: 100%; font-size: 13px;">
+            <tr style="border-bottom: 1px solid #000;">
+                <th style="text-align: right;">المادة</th>
+                <th>العدد</th>
+                <th>السعر</th>
             </tr>
             <tr>
-                <td style="padding: 10px 0;">{p_name}</td>
-                <td style="text-align: center;">{p_qty}</td>
-                <td style="text-align: left;">{int(float(p_total)):,}</td>
+                <td style="text-align: right;">{b['item']}</td>
+                <td>{b['qty']}</td>
+                <td>{int(b['total']):,}</td>
             </tr>
         </table>
-        <div style="border-top: 2px solid #000; margin-top: 15px; padding-top: 10px; font-weight: bold; font-size: 16px; display: flex; justify-content: space-between;">
-            <span>المجموع:</span>
-            <span>{int(float(p_total)):,} د.ع</span>
-        </div>
-        <button onclick="window.print()" style="width: 100%; padding: 12px; background: black; color: #FFD700; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-family: 'Cairo'; margin-top: 15px;">🖨️ طباعة الوصل الآن</button>
+        <h4 style="border-top: 1px solid #000; padding-top: 5px;">المجموع: {int(b['total']):,} د.ع</h4>
+        <button onclick="window.print()" style="width: 100%; padding: 8px; background: black; color: gold; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">🖨️ طباعة الوصل</button>
     </div>
     """
-    st.components.v1.html(receipt_html, height=520)
-    
-    if st.button("🗑️ مسح الوصل الحالي"):
-        os.remove("temp_receipt.txt")
-        st.rerun()
-else:
-    st.info("💡 يا أيوب، النظام بانتظار عملية بيع. إذا بعت ولم يظهر شيء، فهذا يعني أن أسماء المتغيرات في كودك تختلف عن كودي.")
+    st.components.v1.html(html_code, height=400)
